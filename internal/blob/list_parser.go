@@ -7,17 +7,18 @@ import (
 	"strings"
 )
 
-type directoryHandler interface {
+type listEntryHandler interface {
+	handleBlob(path string)
 	handleDirectory(path string)
 }
 
 type listParser struct {
 	file    *os.File
 	scanner *bufio.Scanner
-	handler directoryHandler
+	handler listEntryHandler
 }
 
-func newListParser(path string, handler directoryHandler) (*listParser, error) {
+func newListParser(path string, handler listEntryHandler) (*listParser, error) {
 	file, err := os.Open(path)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to open list file \"%s\": %v", path, err)
@@ -42,22 +43,24 @@ func (p *listParser) parseAll() error {
 	for scanner.Scan() {
 		line = strings.TrimSpace(scanner.Text())
 		// Skips comment
-		if strings.HasPrefix(line, "#") {
+		if strings.HasPrefix(line, "#") || len(line) == 0 {
 			continue
 		}
-		line = strings.TrimPrefix(line, "/")
-		if !strings.HasSuffix(line, "/") {
-			line = line + "/"
+
+		if len(line) > 1 {
+			line = strings.TrimPrefix(line, "/")
 		}
-		if len(line) > 0 {
+
+		if strings.HasSuffix(line, "/") {
 			handler.handleDirectory(line)
+		} else {
+			handler.handleBlob(line)
 		}
 	}
 
 	var err = scanner.Err()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error has occurred while parsing the list file: %v", err)
-		return err
+		return fmt.Errorf("error has occurred while parsing the list file: %w", err)
 	}
 
 	return nil

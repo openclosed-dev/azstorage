@@ -38,11 +38,15 @@ func newDirectoryWalker(
 func (w *directoryWalker) walk(dir string) error {
 	w.logger.Printf("Starting directory \"%s\"\n", dir)
 
-	pager := w.containerClient.NewListBlobsFlatPager(
-		&azblob.ListBlobsFlatOptions{
-			Prefix:  &dir,
-			Include: container.ListBlobsInclude{Deleted: false, Versions: false},
-		})
+	var options = azblob.ListBlobsFlatOptions{
+		Include: container.ListBlobsInclude{Deleted: false, Versions: false},
+	}
+
+	if dir != "/" {
+		options.Prefix = &dir
+	}
+
+	pager := w.containerClient.NewListBlobsFlatPager(&options)
 
 	for pager.More() {
 		resp, err := pager.NextPage(w.context)

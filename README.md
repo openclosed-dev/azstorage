@@ -7,7 +7,7 @@ A command line tool for daily operations on Azure Storage Accounts.
 ### azstorage remove
 
 ```
-Removes the blobs listed in the specified file
+Deletes the blobs listed in the specified file
 
 Usage:
   azstorage remove [flags]
@@ -23,22 +23,31 @@ Flags:
 
 The options `account`, `container`, and `list-file` are required to specify.
 
-The storage account key must be specified with environment variable `AZURE_STORAGE_ACCOUNT_KEY`.
+The storage account key must be specified using an environment variable `AZURE_STORAGE_ACCOUNT_KEY`.
 
-The list file specified by `--list-file` option contains directories to delete on each line.
-
-Example of list file:
+Invoke the command as follows:
 ```
-dir1
-dir2/foo
-dir3/bar/baz
+AZURE_STORAGE_ACCOUNT_KEY=<account key> azstorage remove --account <account name> --container <container name> --list-file <path/to/your/list>
 ```
 
+Each line in the list file, which is specified by `--list-file`, holds a name of a blob or a directory.
+The name of directory must end with slash `/`.
 The blank lines and lines starting with `#` are skipped.
+
+An example of list file:
+```
+dir1/
+dir2/subdir1/
+dir3/subdir2/subdir3/
+```
+
+**Caution**: The following list will delete all blobs in your container.
+```
+/
+```
 
 ## How to build
 
 ```
-make clean
 make
 ```
