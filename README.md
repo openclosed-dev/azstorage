@@ -46,7 +46,36 @@ dir3/subdir2/subdir3/
 /
 ```
 
+### Architecture
+
+```mermaid
+graph LR;
+  P[Parser] --> C1(channel);
+  C1 --> W1[Walker 1];
+  C1 --> W2[Walker 2];
+  W1 --> C2(channel);
+  W2 --> C2;
+  C2 --> P1[Processor 1]
+  C2 --> P2[Processor 2]
+  C2 --> P3[Processor 3]
+  C2 --> P4[Processor 4]
+```
+
+* _Parser_ parses the list file and produces directories.
+* _Walker_ searches blobs for a directory and produces blobs.
+* _Processor_ deletes a found blob.
+
 ## How to build
+
+### Prerequisites
+
+* [Go](https://go.dev/dl/) 1.22 or higher
+
+```
+sudo apt install golang-go make
+```
+
+### Building with make
 
 ```
 make
