@@ -7,7 +7,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/container"
 )
 
-type removingJob struct {
+type blobRemovingJob struct {
 	containerClient *container.Client
 	dirs            chan string
 	blobs           chan string
@@ -17,25 +17,19 @@ type removingJob struct {
 	processors      []blobProcessor
 }
 
-func (client *ContainerClient) RemoveBlobsInList(listFile string, walkers int, processors int) error {
+func newBlobRemovingJob(
+	walkers int, processors int, containerClient *container.Client) *blobRemovingJob {
 
-	var job = removingJob{
-		containerClient: client.containerClient,
+	return &blobRemovingJob{
+		containerClient: containerClient,
 		dirs:            make(chan string, walkers),
 		blobs:           make(chan string, processors),
 		walkers:         make([]*directoryWalker, 0, walkers),
 		processors:      make([]blobProcessor, 0, processors),
 	}
-
-	defer func() {
-		job.close()
-		job.printSummary()
-	}()
-
-	return job.doJob(listFile, walkers, processors)
 }
 
-func (job *removingJob) doJob(listFile string, walkers int, processors int) error {
+func (job *blobRemovingJob) doJob(listFile string) error {
 
 	parser, err := newListParser(listFile, job)
 	if err != nil {
@@ -43,21 +37,28 @@ func (job *removingJob) doJob(listFile string, walkers int, processors int) erro
 	}
 	defer parser.close()
 
-	job.startProcessors(processors)
-	job.startWalkers(walkers)
+	defer job.waitForCompletion()
+
+	job.startProcessors(cap(job.processors))
+	job.startWalkers(cap(job.walkers))
 
 	return parser.parseAll()
 }
 
-func (job *removingJob) handleDirectory(path string) {
+func (job *blobRemovingJob) waitForCompletion() {
+	job.close()
+	job.printSummary()
+}
+
+func (job *blobRemovingJob) handleDirectory(path string) {
 	job.dirs <- path
 }
 
-func (job *removingJob) handleBlob(path string) {
+func (job *blobRemovingJob) handleBlob(path string) {
 	job.blobs <- path
 }
 
-func (job *removingJob) startProcessors(count int) {
+func (job *blobRemovingJob) startProcessors(count int) {
 
 	for i := range count {
 		var name = fmt.Sprintf("processor-%03d", i+1)
@@ -73,7 +74,7 @@ func (job *removingJob) startProcessors(count int) {
 	}
 }
 
-func (job *removingJob) startWalkers(count int) {
+func (job *blobRemovingJob) startWalkers(count int) {
 
 	for i := range count {
 		var name = fmt.Sprintf("walker-%03d", i+1)
@@ -89,7 +90,7 @@ func (job *removingJob) startWalkers(count int) {
 	}
 }
 
-func (job *removingJob) close() {
+func (job *blobRemovingJob) close() {
 
 	// Waits for directory walkers to complete
 	close(job.dirs)
@@ -100,7 +101,7 @@ func (job *removingJob) close() {
 	job.processorGroup.Wait()
 }
 
-func (job *removingJob) printSummary() {
+func (job *blobRemovingJob) printSummary() {
 	found := job.getFoundBlobs()
 	successful, failed := job.getProcessedBlobs()
 
@@ -108,7 +109,7 @@ func (job *removingJob) printSummary() {
 	fmt.Printf("Summary: blobs found: %d, successful: %d, failed: %d\n", found, successful, failed)
 }
 
-func (job *removingJob) getFoundBlobs() int {
+func (job *blobRemovingJob) getFoundBlobs() int {
 	var total = 0
 	for _, walker := range job.walkers {
 		total += walker.getTotalFound()
@@ -116,7 +117,7 @@ func (job *removingJob) getFoundBlobs() int {
 	return total
 }
 
-func (job *removingJob) getProcessedBlobs() (int, int) {
+func (job *blobRemovingJob) getProcessedBlobs() (int, int) {
 	var totalSuccessful = 0
 	var totalFailed = 0
 	for _, processor := range job.processors {

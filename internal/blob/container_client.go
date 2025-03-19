@@ -54,3 +54,8 @@ func NewContainerClient(accountName string, containerName string) (*ContainerCli
 		containerClient: containerClient,
 	}, nil
 }
+
+func (client *ContainerClient) RemoveBlobsInList(listFile string, walkers int, processors int) error {
+	var job = newBlobRemovingJob(walkers, processors, client.containerClient)
+	return job.doJob(listFile)
+}
