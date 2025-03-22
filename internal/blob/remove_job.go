@@ -17,16 +17,27 @@ type blobRemovingJob struct {
 	processors      []blobProcessor
 }
 
-func newBlobRemovingJob(
-	walkers int, processors int, containerClient *container.Client) *blobRemovingJob {
+func RemoveBlobsInList(
+	accountName string,
+	containerName string,
+	listFile string,
+	walkers int,
+	processors int) error {
 
-	return &blobRemovingJob{
-		containerClient: containerClient,
+	client, err := newContainerClient(accountName, containerName)
+	if err != nil {
+		return err
+	}
+
+	var job = blobRemovingJob{
+		containerClient: client,
 		dirs:            make(chan string, walkers),
 		blobs:           make(chan string, processors),
 		walkers:         make([]*directoryWalker, 0, walkers),
 		processors:      make([]blobProcessor, 0, processors),
 	}
+
+	return job.doJob(listFile)
 }
 
 func (job *blobRemovingJob) doJob(listFile string) error {

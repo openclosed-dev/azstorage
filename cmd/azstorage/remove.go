@@ -15,11 +15,8 @@ type removeCommand struct {
 }
 
 func (c *removeCommand) run(cmd *cobra.Command, args []string) error {
-	client, err := blob.NewContainerClient(c.accountName, c.containerName)
-	if err != nil {
-		return err
-	}
-	return client.RemoveBlobsInList(c.listFile, c.walkers, c.processors)
+	return blob.RemoveBlobsInList(
+		c.accountName, c.containerName, c.listFile, c.walkers, c.processors)
 }
 
 func newRemoveCommand() *cobra.Command {
