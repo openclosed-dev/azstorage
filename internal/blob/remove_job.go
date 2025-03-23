@@ -114,19 +114,19 @@ func (job *blobRemovingJob) close() {
 }
 
 func (job *blobRemovingJob) printSummary() {
-	stat := job.getStat()
-	log.Printf("Summary: blobs processed: %d, successful: %d, failed: %d\n", stat.total, stat.successful, stat.failed)
+	stats := job.getStats()
+	log.Printf("Summary: blobs processed: %d, successful: %d, failed: %d\n", stats.total, stats.successful, stats.failed)
 }
 
-func (job *blobRemovingJob) getStat() processorStat {
+func (job *blobRemovingJob) getStats() processorStats {
 
-	var sum = processorStat{}
+	var sum = processorStats{}
 
 	for _, processor := range job.processors {
-		stat := processor.getStat()
-		sum.total += stat.total
-		sum.successful += stat.successful
-		sum.failed += stat.failed
+		stats := processor.getStats()
+		sum.total += stats.total
+		sum.successful += stats.successful
+		sum.failed += stats.failed
 	}
 
 	return sum

@@ -9,7 +9,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/container"
 )
 
-type processorStat struct {
+type processorStats struct {
 	total      int
 	successful int
 	failed     int
@@ -17,7 +17,7 @@ type processorStat struct {
 
 type blobProcessor interface {
 	processBlob(blobName string) error
-	getStat() processorStat
+	getStats() processorStats
 }
 
 type removingBlobProcessor struct {
@@ -60,8 +60,8 @@ func (p *removingBlobProcessor) processBlob(blobName string) error {
 	return nil
 }
 
-func (p *removingBlobProcessor) getStat() processorStat {
-	return processorStat{
+func (p *removingBlobProcessor) getStats() processorStats {
+	return processorStats{
 		p.total, p.successful, p.failed,
 	}
 }
