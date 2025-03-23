@@ -1,16 +1,13 @@
 package main
 
 import (
-	"fmt"
 	"os"
 )
 
 func main() {
 
-	var rootCommand = newRootCommand()
-	var err = rootCommand.Execute()
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
+	rootCommand := newRootCommand()
+	if err := rootCommand.Execute(); err != nil {
 		os.Exit(1)
 	}
 }

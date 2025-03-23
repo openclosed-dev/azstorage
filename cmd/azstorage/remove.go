@@ -29,7 +29,7 @@ func newRemoveCommand() *cobra.Command {
 		listFile: "",
 	}
 
-	command.RunE = command.run
+	command.RunE = runWithLog(command.run)
 
 	command.PersistentFlags().StringVar(&command.accountName, "account", "",
 		"the name of the storage account")

@@ -3,9 +3,12 @@ package blob
 import (
 	"bufio"
 	"fmt"
+	"log"
 	"os"
 	"strings"
 )
+
+const logPrefix = "[parser]"
 
 type listEntryHandler interface {
 	handleBlob(path string)
@@ -19,10 +22,10 @@ type listParser struct {
 }
 
 func newListParser(path string, handler listEntryHandler) (*listParser, error) {
+
 	file, err := os.Open(path)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to open list file \"%s\": %v", path, err)
-		return nil, err
+		return nil, fmt.Errorf("%s failed to open the list file \"%s\": %v", logPrefix, path, err)
 	}
 
 	return &listParser{
@@ -37,6 +40,9 @@ func (p *listParser) close() {
 }
 
 func (p *listParser) parseAll() error {
+
+	log.Printf("%s Start parsing list file \"%s\"", logPrefix, p.file.Name())
+
 	var scanner = p.scanner
 	var handler = p.handler
 	var line string
@@ -62,6 +68,8 @@ func (p *listParser) parseAll() error {
 	if err != nil {
 		return fmt.Errorf("error has occurred while parsing the list file: %w", err)
 	}
+
+	log.Printf("%s Finished parsing list file \"%s\"", logPrefix, p.file.Name())
 
 	return nil
 }

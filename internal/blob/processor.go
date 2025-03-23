@@ -2,8 +2,8 @@ package blob
 
 import (
 	"context"
+	"fmt"
 	"log"
-	"os"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/blob"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/container"
@@ -16,7 +16,7 @@ type blobProcessor interface {
 
 type removingBlobProcessor struct {
 	name            string
-	logger          *log.Logger
+	logPrefix       string
 	containerClient *container.Client
 	context         context.Context
 	successful      int
@@ -28,25 +28,25 @@ func newRemovingBlobProcessor(
 	containerClient *container.Client) *removingBlobProcessor {
 	return &removingBlobProcessor{
 		name:            name,
-		logger:          log.New(os.Stdout, "["+name+"] ", 0),
+		logPrefix:       fmt.Sprintf("[%s]", name),
 		containerClient: containerClient,
 		context:         context.Background(),
 	}
 }
 
 func (p *removingBlobProcessor) processBlob(blobName string) error {
-	p.logger.Printf("Deleting a blob \"%s\"\n", blobName)
+	log.Printf("%s Deleting a blob \"%s\"\n", p.logPrefix, blobName)
 
 	var blobClient = p.containerClient.NewBlobClient(blobName)
 	_, err := blobClient.Delete(p.context, &blob.DeleteOptions{})
 	if err != nil {
-		p.logger.Printf("Failed to delete a blob \"%s\": %v", blobName, err)
+		log.Printf("%s Failed to delete a blob \"%s\": %v", p.logPrefix, blobName, err)
 		p.failed++
 		return err
 	}
 
 	p.successful++
-	p.logger.Printf("Deleted a blob \"%s\" successfully\n", blobName)
+	log.Printf("%s Deleted a blob \"%s\" successfully\n", p.logPrefix, blobName)
 
 	return nil
 }

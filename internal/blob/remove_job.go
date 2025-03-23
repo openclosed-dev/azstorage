@@ -2,6 +2,7 @@ package blob
 
 import (
 	"fmt"
+	"log"
 	"sync"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/container"
@@ -116,8 +117,8 @@ func (job *blobRemovingJob) printSummary() {
 	found := job.getFoundBlobs()
 	successful, failed := job.getProcessedBlobs()
 
-	fmt.Println()
-	fmt.Printf("Summary: blobs found: %d, successful: %d, failed: %d\n", found, successful, failed)
+	log.Println()
+	log.Printf("Summary: blobs found: %d, successful: %d, failed: %d\n", found, successful, failed)
 }
 
 func (job *blobRemovingJob) getFoundBlobs() int {
