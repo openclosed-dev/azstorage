@@ -16,7 +16,9 @@ type runCommand func(cmd *cobra.Command, args []string) error
 func runWithLog(f runCommand) runCommand {
 	return func(cmd *cobra.Command, args []string) error {
 
-		logFile, err := openLogFile()
+		startTime := time.Now()
+
+		logFile, err := openLogFile(&startTime)
 		if err != nil {
 			return nil
 		}
@@ -29,13 +31,16 @@ func runWithLog(f runCommand) runCommand {
 			log.Println(result)
 		}
 
+		elapsedTime := time.Since(startTime)
+		log.Printf("Command execution took %s long", elapsedTime)
+
 		fmt.Println("Log file was saved at: " + logFile.Name())
 
 		return result
 	}
 }
 
-func openLogFile() (*os.File, error) {
+func openLogFile(now *time.Time) (*os.File, error) {
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
 		return nil, err
@@ -46,13 +51,12 @@ func openLogFile() (*os.File, error) {
 		return nil, err
 	}
 
-	logPath := filepath.Join(logDir, generateLogFilename())
+	logPath := filepath.Join(logDir, generateLogFilename(now))
 	return os.OpenFile(logPath, os.O_RDWR|os.O_CREATE, 0644)
 }
 
-func generateLogFilename() string {
-	t := time.Now()
-	return t.Format("20060102T150405.000") + ".log"
+func generateLogFilename(now *time.Time) string {
+	return now.Format("20060102T150405.000") + ".log"
 }
 
 func configureLogger(logFile *os.File) {
