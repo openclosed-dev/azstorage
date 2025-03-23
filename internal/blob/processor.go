@@ -9,9 +9,15 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/container"
 )
 
+type processorStat struct {
+	total      int
+	successful int
+	failed     int
+}
+
 type blobProcessor interface {
 	processBlob(blobName string) error
-	getTotalProcessed() (int, int)
+	getStat() processorStat
 }
 
 type removingBlobProcessor struct {
@@ -19,6 +25,7 @@ type removingBlobProcessor struct {
 	logPrefix       string
 	containerClient *container.Client
 	context         context.Context
+	total           int
 	successful      int
 	failed          int
 }
@@ -35,7 +42,9 @@ func newRemovingBlobProcessor(
 }
 
 func (p *removingBlobProcessor) processBlob(blobName string) error {
+
 	log.Printf("%s Deleting a blob \"%s\"\n", p.logPrefix, blobName)
+	p.total++
 
 	var blobClient = p.containerClient.NewBlobClient(blobName)
 	_, err := blobClient.Delete(p.context, &blob.DeleteOptions{})
@@ -45,12 +54,14 @@ func (p *removingBlobProcessor) processBlob(blobName string) error {
 		return err
 	}
 
-	p.successful++
 	log.Printf("%s Deleted a blob \"%s\" successfully\n", p.logPrefix, blobName)
+	p.successful++
 
 	return nil
 }
 
-func (p *removingBlobProcessor) getTotalProcessed() (int, int) {
-	return p.successful, p.failed
+func (p *removingBlobProcessor) getStat() processorStat {
+	return processorStat{
+		p.total, p.successful, p.failed,
+	}
 }

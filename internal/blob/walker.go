@@ -36,9 +36,11 @@ func newDirectoryWalker(
 }
 
 func (w *directoryWalker) walk(dir string) error {
-	log.Printf("%s Starting directory \"%s\"\n", w.logPrefix, dir)
 
-	var options = azblob.ListBlobsFlatOptions{
+	logPrefix := w.logPrefix
+	log.Printf("%s Starting directory \"%s\"\n", logPrefix, dir)
+
+	options := azblob.ListBlobsFlatOptions{
 		Include: container.ListBlobsInclude{Deleted: false, Versions: false},
 	}
 
@@ -48,23 +50,25 @@ func (w *directoryWalker) walk(dir string) error {
 
 	pager := w.containerClient.NewListBlobsFlatPager(&options)
 
+	var found int
 	for pager.More() {
 		resp, err := pager.NextPage(w.context)
 		if err != nil {
-			log.Printf("%s Error has occurred while walking in directory \"%s\": %v", w.logPrefix, dir, err)
+			log.Printf("%s Error has occurred while walking in directory \"%s\": %v", logPrefix, dir, err)
 			return err
 		}
 		for _, blob := range resp.Segment.BlobItems {
-			w.totalFound++
+			found++
 			w.handler.handleBlob(*blob.Name)
 		}
 	}
 
-	log.Printf("%s Finished directory \"%s\"\n", w.logPrefix, dir)
+	log.Printf("%s Finished directory \"%s\"\n", logPrefix, dir)
+	w.totalFound += found
+
+	if found == 0 {
+		log.Printf("%s No blobs were found in directory \"%s\"\n", logPrefix, dir)
+	}
 
 	return nil
-}
-
-func (w *directoryWalker) getTotalFound() int {
-	return w.totalFound
 }

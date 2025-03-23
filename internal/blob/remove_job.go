@@ -114,28 +114,20 @@ func (job *blobRemovingJob) close() {
 }
 
 func (job *blobRemovingJob) printSummary() {
-	found := job.getFoundBlobs()
-	successful, failed := job.getProcessedBlobs()
-
-	log.Println()
-	log.Printf("Summary: blobs found: %d, successful: %d, failed: %d\n", found, successful, failed)
+	stat := job.getStat()
+	log.Printf("Summary: blobs processed: %d, successful: %d, failed: %d\n", stat.total, stat.successful, stat.failed)
 }
 
-func (job *blobRemovingJob) getFoundBlobs() int {
-	var total = 0
-	for _, walker := range job.walkers {
-		total += walker.getTotalFound()
-	}
-	return total
-}
+func (job *blobRemovingJob) getStat() processorStat {
 
-func (job *blobRemovingJob) getProcessedBlobs() (int, int) {
-	var totalSuccessful = 0
-	var totalFailed = 0
+	var sum = processorStat{}
+
 	for _, processor := range job.processors {
-		successful, failed := processor.getTotalProcessed()
-		totalSuccessful += successful
-		totalFailed += failed
+		stat := processor.getStat()
+		sum.total += stat.total
+		sum.successful += stat.successful
+		sum.failed += stat.failed
 	}
-	return totalSuccessful, totalFailed
+
+	return sum
 }
