@@ -1,6 +1,7 @@
 package blob
 
 import (
+	"context"
 	"fmt"
 	"os"
 
@@ -14,6 +15,7 @@ func newServiceClient(accountName string) (*service.Client, error) {
 
 	serviceURL := fmt.Sprintf("https://%s.blob.core.windows.net/", accountName)
 
+	var client *service.Client
 	accountKey, ok := os.LookupEnv("AZURE_STORAGE_ACCOUNT_KEY")
 	if ok {
 
@@ -22,7 +24,10 @@ func newServiceClient(accountName string) (*service.Client, error) {
 			return nil, fmt.Errorf("authentication failure with account key: %w", err)
 		}
 
-		return service.NewClientWithSharedKeyCredential(serviceURL, credential, nil)
+		client, err = service.NewClientWithSharedKeyCredential(serviceURL, credential, nil)
+		if err != nil {
+			return nil, err
+		}
 
 	} else {
 
@@ -31,8 +36,17 @@ func newServiceClient(accountName string) (*service.Client, error) {
 			return nil, err
 		}
 
-		return service.NewClient(serviceURL, credential, nil)
+		client, err = service.NewClient(serviceURL, credential, nil)
+		if err != nil {
+			return nil, err
+		}
 	}
+
+	if err := verifyServiceClient(client); err != nil {
+		return nil, fmt.Errorf("failed to access the blob service: %w", err)
+	}
+
+	return client, nil
 }
 
 func newContainerClient(accountName string, containerName string) (*container.Client, error) {
@@ -42,5 +56,21 @@ func newContainerClient(accountName string, containerName string) (*container.Cl
 		return nil, err
 	}
 
-	return serviceClient.NewContainerClient(containerName), nil
+	client := serviceClient.NewContainerClient(containerName)
+
+	if err := verifyContainerClient(client); err != nil {
+		return nil, fmt.Errorf("failed to access the blob container: %w", err)
+	}
+
+	return client, nil
+}
+
+func verifyServiceClient(client *service.Client) error {
+	_, err := client.GetProperties(context.Background(), nil)
+	return err
+}
+
+func verifyContainerClient(client *container.Client) error {
+	_, err := client.GetProperties(context.Background(), nil)
+	return err
 }
